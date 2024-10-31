@@ -2,7 +2,7 @@ from imports import *
 from helper import *
 
 class Classifier(nn.Module):
-    def __init__(self, name = classifier):
+    def __init__(self, name = "classifier"):
         super(Classifier, self).__init__()
         self.name = name
 
