@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader, random_split, Subset
 from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision.transforms as transforms
 import os
+import matplotlib.pyplot as plt
 
 global_path = "./Data/"
 
@@ -118,7 +119,7 @@ def plot_training_curve(path):
   Args:
   path: The base path of the csv files produced during training
   """
-  import matplotlib.pyplot as plt
+  
 
   # Load data
   train_err = np.loadtxt("{}_train_err.csv".format(path))
