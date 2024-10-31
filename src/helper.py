@@ -27,6 +27,7 @@ def get_relevant_indices(dataset, classes, target_classes):
 
 def get_data_loader(batch_size):
   np.random.seed(1000)
+
   # List of target classes
   classes = ("Lung_Opacity", "Normal", "COVID", "Viral Pneumonia")
   target_classes = ("Lung_Opacity", "Normal", "COVID")
@@ -68,11 +69,13 @@ def get_data_loader(batch_size):
                                              sampler=train_sampler)
 
   val_sampler = SubsetRandomSampler(val_indices)
+  val_sampler = SubsetRandomSampler(val_indices)
   val_loader = torch.utils.data.DataLoader(dataset,
                                            batch_size=batch_size,
                                            num_workers=0,
                                            sampler=val_sampler)
 
+  test_sampler = SubsetRandomSampler(test_indices)
   test_sampler = SubsetRandomSampler(test_indices)
   test_loader = torch.utils.data.DataLoader(dataset,
                                             batch_size=batch_size,
@@ -112,7 +115,7 @@ def plot_training_curve(path):
   Args:
   path: The base path of the csv files produced during training
   """
-  import matplotlib.pyplot as plt
+  
 
   # Load data
   train_err = np.loadtxt("{}_train_err.csv".format(path))
