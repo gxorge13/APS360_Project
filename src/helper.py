@@ -140,7 +140,7 @@ def plot_training_curve(path):
   plt.legend(loc='best')
   plt.show()
 
-def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
+def train_net_with_features(net, batch_size=64, learning_rate=0.01, num_epochs=30):
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    net.to(device)
    ########################################################################
