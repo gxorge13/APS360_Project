@@ -85,7 +85,7 @@ def get_data_loader(batch_size):
   return train_loader, val_loader, test_loader, target_classes
 
 def evaluate(net, loader, criterion):
-   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+   device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
    net.to(device) 
    total_loss = 0.0
    total_err = 0.0
@@ -210,8 +210,7 @@ def train_net_with_features(net, batch_size=64, learning_rate=0.01, num_epochs=3
          total_epoch += len(labels)
       train_err[epoch] = float(total_train_err) / total_epoch
       train_loss[epoch] = float(total_train_loss) / (i+1)
-      val_err[epoch], val_loss[epoch] = evaluate(net, val_loader, criterion,
-                                                 device)
+      val_err[epoch], val_loss[epoch] = evaluate(net, val_loader, criterion)
       print(("Epoch {}: Train err: {}, Train loss: {} |"+
               "Validation err: {}, Validation loss: {}").format(
                   epoch + 1,
@@ -232,3 +231,4 @@ def train_net_with_features(net, batch_size=64, learning_rate=0.01, num_epochs=3
    np.savetxt("{}_train_loss.csv".format(model_path), train_loss)
    np.savetxt("{}_val_err.csv".format(model_path), val_err)
    np.savetxt("{}_val_loss.csv".format(model_path), val_loss)
+
