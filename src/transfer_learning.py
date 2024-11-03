@@ -45,3 +45,37 @@ def get_last_layer():
    img = torch.randn(1, 3, 299, 299)
 
    return conv(img).shape
+ 
+ 
+def get_features(path, num_cols=8, plot_size=3):
+  from PIL import Image
+  
+  image = Image.open(path)
+  
+  transform = transforms.Compose(
+      [transforms.ToTensor(),
+       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+  
+  # Convert to RGB if the image is grayscale (single channel)
+  if image.mode != 'RGB':
+    image = image.convert('RGB')
+  tensor = transform(image)
+  
+  conv = nn.Sequential(*list(VGG.children())[0])
+  feature_maps = conv(tensor)
+  if feature_maps.dim() == 4:
+      feature_maps = feature_maps.squeeze(0)  # Shape (num_channels, height, width)
+
+  num_channels = feature_maps.shape[0]
+  num_rows = (num_channels + num_cols - 1) // num_cols  # Calculate rows needed for grid
+
+  # Set up the figure with a larger figsize
+  plt.figure(figsize=(num_cols * plot_size, num_rows * plot_size))
+  for i in range(num_channels):
+      plt.subplot(num_rows, num_cols, i + 1)
+      plt.imshow(feature_maps[i].detach().cpu().numpy(), cmap="gray")
+      plt.axis("off")
+  plt.show()
+  
+  
+get_features("./Data/Normal/images/Normal-1.png", 25, 4)
