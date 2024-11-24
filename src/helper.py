@@ -21,68 +21,88 @@ def get_relevant_indices(dataset, classes, target_classes):
   for i, (_, label_idx) in enumerate(dataset.samples):
       class_label = classes[label_idx]
       if class_label in target_classes:
-          indices.append((i, new_idx[class_label]))
+            indices.append((i, new_idx[class_label]))
 
   return indices
 
 def get_data_loader(batch_size):
-  np.random.seed(1000)
+    import numpy as np
+    import torch
+    from torchvision import transforms, datasets
+    from torch.utils.data import DataLoader, SubsetRandomSampler, Dataset
 
-  # List of target classes
-  classes = ("Lung_Opacity", "Normal", "COVID", "Viral Pneumonia")
-  target_classes = ("Lung_Opacity", "Normal", "COVID")
+    np.random.seed(1000)
 
-  # Transforms applied to samples
-  transform = transforms.Compose(
-      [transforms.ToTensor(),
-       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    # List of target classes
+    classes = ("Cancer&Nodule", "Lung_Opacity", "Normal", "COVID", "Viral Pneumonia", "ProcessedCancer")
+    target_classes = ("ProcessedCancer", "Normal", "COVID")
 
-  # Load the images from folder
-  dataset = datasets.ImageFolder(global_path,
-                                 transform,
-                                 is_valid_file=is_file_valid)
+    # Transforms applied to samples
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-  # Grab the indices
-  relevant_indices, remapped_labels = zip(*get_relevant_indices(dataset, classes,
-                                                     target_classes))
-  
-  relevant_indices = np.array(relevant_indices)
+    dataset = datasets.ImageFolder(global_path, transform=transform, is_valid_file=is_file_valid)
 
-  # Shuffle the indices
-  np.random.shuffle(relevant_indices)
-
-  # Set up split 95% for train and val, 5% for test
-  trainval_test_split = int(len(relevant_indices)*0.85)
-
-  # 80% of 95% for train, 20% for validation
-  train_val_split = int(trainval_test_split*0.82)
-
-  train_indices = relevant_indices[:train_val_split]
-  val_indices = relevant_indices[train_val_split:trainval_test_split]
-  test_indices = relevant_indices[trainval_test_split:]
+    relevant_indices, remapped_labels = zip(*get_relevant_indices(dataset, classes, target_classes))
     
-  # Get loaders
-  train_sampler = SubsetRandomSampler(train_indices)
-  train_loader = torch.utils.data.DataLoader(dataset,
-                                             batch_size=batch_size,
-                                             num_workers=0,
-                                             sampler=train_sampler)
+    relevant_indices = np.array(relevant_indices)
+    remapped_labels = np.array(remapped_labels)
 
-  val_sampler = SubsetRandomSampler(val_indices)
-  val_sampler = SubsetRandomSampler(val_indices)
-  val_loader = torch.utils.data.DataLoader(dataset,
-                                           batch_size=batch_size,
-                                           num_workers=0,
-                                           sampler=val_sampler)
+    min_samples = min((remapped_labels == class_id).sum() for class_id in range(len(target_classes)))
 
-  test_sampler = SubsetRandomSampler(test_indices)
-  test_sampler = SubsetRandomSampler(test_indices)
-  test_loader = torch.utils.data.DataLoader(dataset,
-                                            batch_size=batch_size,
-                                            num_workers=0,
-                                            sampler=test_sampler)
+    balanced_indices = []
+    balanced_labels = []  
+    for class_id in range(len(target_classes)):
+        class_indices = relevant_indices[remapped_labels == class_id]
+        balanced_indices.extend(class_indices[:min_samples])  
+        balanced_labels.extend([class_id] * min_samples) 
 
-  return train_loader, val_loader, test_loader, target_classes
+    balanced_data = list(zip(balanced_indices, balanced_labels))
+    np.random.shuffle(balanced_data)
+    balanced_indices, balanced_labels = zip(*balanced_data)
+
+    # Convert to numpy arrays
+    balanced_indices = np.array(balanced_indices)
+    balanced_labels = np.array(balanced_labels)
+
+    # Split indices: 85% train+val, 15% test
+    trainval_test_split = int(len(balanced_indices) * 0.85)
+
+    # Further split train+val into 75% train, 15% val
+    train_val_split = int(trainval_test_split * 0.882)
+
+    train_indices = balanced_indices[:train_val_split]
+    train_labels = balanced_labels[:train_val_split]
+    val_indices = balanced_indices[train_val_split:trainval_test_split]
+    val_labels = balanced_labels[train_val_split:trainval_test_split]
+    test_indices = balanced_indices[trainval_test_split:]
+    test_labels = balanced_labels[trainval_test_split:]
+
+    class CustomSubset(Dataset):
+        def __init__(self, dataset, indices, labels):
+            self.dataset = dataset
+            self.indices = indices
+            self.labels = labels
+
+        def __len__(self):
+            return len(self.indices)
+
+        def __getitem__(self, idx):
+            data, _ = self.dataset[self.indices[idx]]  # Ignore the original label
+            label = self.labels[idx]
+            return data, label
+
+    def create_loader(indices, labels):
+        subset = CustomSubset(dataset, indices, labels)
+        return DataLoader(subset, batch_size=batch_size, num_workers=0, shuffle=True)
+
+    train_loader = create_loader(train_indices, train_labels)
+    val_loader = create_loader(val_indices, val_labels)
+    test_loader = create_loader(test_indices, test_labels)
+
+    return train_loader, val_loader, test_loader, target_classes
+
 
 def evaluate(net, loader, criterion):
    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
