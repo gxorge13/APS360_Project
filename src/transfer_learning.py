@@ -1,43 +1,54 @@
 from imports import *
 from helper import *
 import torchvision.models
+from concurrent.futures import ThreadPoolExecutor
 
 save_path = "./models/vgg/features"
 VGG = torchvision.models.vgg16(pretrained=True)
 
-def save_features():
-  train_loader, val_loader, test_loader, classes = get_data_loader(batch_size=1)
-  print(f"Number of features: {len(train_loader), len(val_loader), len(test_loader)}")
-  
-  feature_count = [0 for i in range(len(classes))]
-  for img, l in train_loader:
-    dir = f"{save_path}/train/{classes[l]}"
-    feat = VGG.features(img)
-    if not os.path.isdir(dir):
-      os.makedirs(dir, exist_ok=True)
+def save_features_for_loader(loader, classes, save_path, split):
+    feature_count = [0 for _ in range(len(classes))]
 
-    torch.save(feat, f"{dir}/feature_{feature_count[l]}.tensor")
-    feature_count[l]+=1
+    total = len(loader)
+    count = 0
+    print(f"Saving began for split: {split} 0/{total}")
+    for imgs, labels in loader:  # Process batches
+        feats = VGG.features(imgs)  # Extract features for the entire batch
+
+        for i in range(imgs.size(0)):  # Iterate through the batch
+            class_label = labels[i].item()
+            class_dir = f"{save_path}/{split}/{classes[class_label]}"
+            os.makedirs(class_dir, exist_ok=True)
+
+            # Save feature for the i-th image in the batch
+            torch.save(feats[i], f"{class_dir}/feature_{feature_count[class_label]}.tensor")
+            feature_count[class_label] += 1
+        count += 1
+        print(f"Batch done for split: {split} {count}/{total}")
+
+    print(f"Finished saving features for {split} set.")
+
+
+def save_features_parallel(batch_size=16):
+    # Load data loaders
+    train_loader, val_loader, test_loader, classes = get_data_loader(batch_size=batch_size)
+    print(f"Number of features: {len(train_loader)}, {len(val_loader)}, {len(test_loader)}")
     
-  feature_count = [0 for i in range(len(classes))]
-  for img, l in val_loader:
-    dir = f"{save_path}/val/{classes[l]}"
-    feat = VGG.features(img)
-    if not os.path.isdir(dir):
-      os.makedirs(dir, exist_ok=True)
+    # Define save path
+    splits = {"train": train_loader, "val": val_loader, "test": test_loader}
 
-    torch.save(feat, f"{dir}/feature_{feature_count[l]}.tensor")
-    feature_count[l]+=1
+    # Use ThreadPoolExecutor to parallelize split-level processing
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(save_features_for_loader, loader, classes, save_path, split)
+            for split, loader in splits.items()
+        ]
+        # Wait for all tasks to complete
+        for future in futures:
+            future.result()
 
-  feature_count = [0 for i in range(len(classes))]
-  for img, l in test_loader:
-    dir = f"{save_path}/test/{classes[l]}"
-    feat = VGG.features(img)
-    if not os.path.isdir(dir):
-        os.makedirs(dir, exist_ok=True)
-    torch.save(feat, f"{dir}/feature_{feature_count[l]}.tensor")
-    feature_count[l]+=1
-     
+    print("Feature saving complete for all splits.")
+
 def get_last_layer():
    conv = nn.Sequential(*list(VGG.children())[0])
    print(conv)
@@ -47,9 +58,7 @@ def get_last_layer():
    return conv(img).shape
  
  
-def get_features(path, num_cols=8, plot_size=3):
-  from PIL import Image
-  
+def get_features(path):  
   image = Image.open(path)
   
   transform = transforms.Compose(
@@ -63,6 +72,12 @@ def get_features(path, num_cols=8, plot_size=3):
   
   conv = nn.Sequential(*list(VGG.children())[0])
   feature_maps = conv(tensor)
+  return feature_maps
+  
+
+def plot_features(features, num_cols=8, plot_size=3):
+  from PIL import Image
+
   if feature_maps.dim() == 4:
       feature_maps = feature_maps.squeeze(0)  # Shape (num_channels, height, width)
 
@@ -77,6 +92,5 @@ def get_features(path, num_cols=8, plot_size=3):
       plt.axis("off")
   plt.show()
   
-  
 # get_features("./Data/Normal/images/Normal-1.png", 25, 4)
-save_features()
+# save_features()

@@ -1,6 +1,6 @@
 from classifier import *
 
-myClassifier = Classifier("model1")
+myClassifier = Classifier("model3")
 
 train_net_with_features(myClassifier, batch_size = 256, learning_rate=0.001, num_epochs = 20)
 

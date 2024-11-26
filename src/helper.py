@@ -17,9 +17,11 @@ def is_file_valid(filepath):
 def get_relevant_indices(dataset, classes, target_classes):
   """ Returns indices of data that exist in target_classes """
   new_idx = {cls: idx for idx, cls in enumerate(target_classes)}
+  print(new_idx)
   indices = []
   for i, (_, label_idx) in enumerate(dataset.samples):
       class_label = classes[label_idx]
+
       if class_label in target_classes:
             indices.append((i, new_idx[class_label]))
 
@@ -34,12 +36,13 @@ def get_data_loader(batch_size):
     np.random.seed(1000)
 
     # List of target classes
-    classes = ("Cancer&Nodule", "Lung_Opacity", "Normal", "COVID", "Viral Pneumonia", "ProcessedCancer")
+    classes = ("ProcessedCancer", "Normal", "COVID", "Cancer&Nodule", "Lung_Opacity", "Viral Pneumonia")
     target_classes = ("ProcessedCancer", "Normal", "COVID")
 
     # Transforms applied to samples
     transform = transforms.Compose(
-        [transforms.ToTensor(),
+        [transforms.Resize((299, 299)),
+         transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     dataset = datasets.ImageFolder(global_path, transform=transform, is_valid_file=is_file_valid)
@@ -48,9 +51,11 @@ def get_data_loader(batch_size):
     
     relevant_indices = np.array(relevant_indices)
     remapped_labels = np.array(remapped_labels)
-
+    
+    print(list((remapped_labels == class_id).sum() for class_id in range(len(target_classes))))
     min_samples = min((remapped_labels == class_id).sum() for class_id in range(len(target_classes)))
-
+    print("MIn Samples: ", min_samples)
+    
     balanced_indices = []
     balanced_labels = []  
     for class_id in range(len(target_classes)):
@@ -115,7 +120,7 @@ def evaluate(net, loader, criterion):
       inputs, labels = data
       labels = labels.long() # labels to values
       inputs, labels = inputs.to(device), labels.to(device)  
-   
+         
       outputs = net(inputs) 
    
       loss = criterion(outputs, labels.long())
