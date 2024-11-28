@@ -63,4 +63,5 @@ if __name__ == "__main__":
    cm, f1, accuracy, precision, recall = eval_net(net, val_loader, classes)
    plot_confusion_matrix(cm, classes, title="Confusion Matrix")
    print(f"f1 score: {f1}, accuracy: {accuracy}, precision: {precision}, recall: {recall}")
+
 #f1 score: [0.85522788 0.87128713 0.96818811], accuracy: 0.8979779411764706, precision: [0.85066667 0.87749288 0.96685083], recall: [0.85983827 0.86516854 0.96952909]
