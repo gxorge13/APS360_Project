@@ -35,7 +35,8 @@ def save_features_parallel(batch_size=16):
     print(f"Number of features: {len(train_loader)}, {len(val_loader)}, {len(test_loader)}")
     
     # Define save path
-    splits = {"train": train_loader, "val": val_loader, "test": test_loader}
+    # splits = {"train": train_loader, "val": val_loader, "test": test_loader}
+    splits = { "val": val_loader, "test": test_loader}
 
     # Use ThreadPoolExecutor to parallelize split-level processing
     with ThreadPoolExecutor() as executor:

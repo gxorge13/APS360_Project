@@ -74,8 +74,8 @@ def get_data_loader(batch_size):
     # Split indices: 85% train+val, 15% test
     trainval_test_split = int(len(balanced_indices) * 0.85)
 
-    # Further split train+val into 75% train, 15% val
-    train_val_split = int(trainval_test_split * 0.882)
+    # Further split train+val into 70% train, 15% val
+    train_val_split = int(trainval_test_split * 0.823529411765)
 
     train_indices = balanced_indices[:train_val_split]
     train_labels = balanced_labels[:train_val_split]
@@ -110,7 +110,7 @@ def get_data_loader(batch_size):
 
 
 def evaluate(net, loader, criterion):
-   device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+   device = torch.device("cuda" if torch.backends.mps.is_available() else "cpu")
    net.to(device) 
    total_loss = 0.0
    total_err = 0.0

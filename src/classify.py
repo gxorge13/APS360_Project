@@ -4,8 +4,8 @@ import numpy as np
 import torch.nn as nn
 
 # Initialize classifier and load weights
-myClassifier = Classifier("model3")
-model_path = f"./models/vgg_transfer_classifier/{myClassifier.name}_BS={256}_LR={0.001}_EP={19}"
+myClassifier = Classifier("model4")
+model_path = f"./models/vgg_transfer_classifier/{myClassifier.name}_BS={256}_LR={0.001}_EP={13}"
 
 myClassifier.load_state_dict(torch.load(model_path))
 myClassifier.eval()  # Ensure the model is in evaluation mode
