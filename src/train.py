@@ -8,3 +8,4 @@ from classifier import *
 plot_training_curve(f"./models/vgg_transfer_classifier/model3_BS={256}_LR={0.001}_EP={19}")
 
 # C:\Users\georg\OneDrive\Desktop\SideProjects\APS360_Project\models\vgg_transfer_classifier\model3_BS=256_LR=0.001_EP=19
+
